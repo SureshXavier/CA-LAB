@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Certificate Authority Practice Lab — D. Suresh Xavier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c1013;
+    --panel:#141a1f;
+    --panel-2:#10161a;
+    --line:#232c33;
+    --text:#e6edf2;
+    --muted:#8a99a6;
+    --mint:#4cc9f0;
+    --mint-dim:#1b5b73;
+    --gold:#ff8fab;
+    --gold-dim:#6b2f40;
+    --red:#ff7a59;
+    --red-dim:#5c2a1e;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 0%, rgba(76,201,240,0.07), transparent 45%),
+      radial-gradient(circle at 85% 10%, rgba(255,143,171,0.06), transparent 40%);
+    color:var(--text);
+    font-family:'Sora',system-ui,-apple-system,sans-serif;
+    line-height:1.6;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  code, pre, .mono{font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;}
+  code{font-size:.85em; color:#bfeaff;}
+  a{color:var(--mint);}
+  .wrap{max-width:900px; margin:0 auto; padding:0 24px;}
+  section{padding:60px 0;}
+  h1,h2,h3{font-weight:700; margin:0 0 .4em;}
+  h2.sec{color:#f4f8fb; font-size:1.35rem; margin-bottom:22px;}
+  p{color:var(--muted); margin:0 0 1em;}
+  .eyebrow{font-family:'JetBrains Mono',monospace; font-size:.78rem; color:var(--gold); margin-bottom:6px; letter-spacing:.04em;}
+
+  /* HERO */
+  .hero{padding:72px 0 40px;}
+  .hero .tag{
+    display:inline-block; font-family:'JetBrains Mono',monospace; font-size:.78rem;
+    color:var(--mint); background:rgba(76,201,240,.08); border:1px solid var(--mint-dim);
+    padding:5px 11px; border-radius:999px; margin-bottom:22px;
+  }
+  .hero h1{font-size:2.5rem; line-height:1.15; color:#f4f8fb; letter-spacing:-.01em;}
+  .hero h1 .accent{color:var(--mint);}
+  .hero .sub-title{font-family:'JetBrains Mono',monospace; font-size:.9rem; color:var(--gold); margin:6px 0 18px;}
+  .hero p.lede{font-size:1.04rem; color:var(--muted); max-width:700px;}
+  .hero p.lede b{color:var(--text); font-weight:600;}
+  .stats{margin-top:26px; display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px;}
+  .stat{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px 14px;}
+  .stat strong{display:block; color:var(--mint); font-family:'JetBrains Mono',monospace; font-size:.8rem; font-weight:600; margin-bottom:2px;}
+  .stat span{font-size:.85rem; color:var(--text);}
+
+  /* OVERVIEW + ARCHITECTURE */
+  .overview{border-top:1px solid var(--line);}
+  .overview p{color:var(--text); max-width:720px;}
+  .contains{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin:22px 0 8px;}
+  .contains div{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px;}
+  .contains h4{margin:0 0 6px; font-size:.92rem; color:var(--mint); font-family:'JetBrains Mono',monospace;}
+  .contains p{margin:0; font-size:.83rem; color:var(--muted);}
+
+  .arch{margin:34px 0 8px; background:var(--panel-2); border:1px solid var(--line); border-radius:var(--radius); padding:22px 18px 18px;}
+  .arch h3{font-size:1rem; color:#f4f8fb; margin-bottom:2px;}
+  .arch .hint{font-family:'JetBrains Mono',monospace; font-size:.72rem; color:var(--muted); margin-bottom:12px;}
+  .arch-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  .arch-scroll svg{display:block; min-width:740px; width:100%; height:auto;}
+  .legend{margin:16px 0 0; padding:0; list-style:none; display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:8px 20px;}
+  .legend li{font-size:.84rem; color:var(--muted); display:flex; gap:10px; align-items:flex-start;}
+  .legend .b{
+    flex:0 0 22px; height:22px; border-radius:50%; background:rgba(76,201,240,.1); border:1px solid var(--mint-dim);
+    color:var(--mint); font-family:'JetBrains Mono',monospace; font-size:.75rem; display:flex; align-items:center; justify-content:center;
+  }
+  .legend b{color:var(--text); font-weight:600;}
+
+  .table-wrap{overflow-x:auto; margin-top:22px;}
+  table{width:100%; border-collapse:collapse; font-size:.85rem; min-width:620px;}
+  th,td{text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top;}
+  th{font-family:'JetBrains Mono',monospace; font-size:.74rem; color:var(--gold); font-weight:500; letter-spacing:.03em;}
+  td{color:var(--muted);}
+  td:first-child{color:var(--mint); font-family:'JetBrains Mono',monospace; white-space:nowrap;}
+
+  /* WHY */
+  .why{border-top:1px solid var(--line);}
+  .why p{color:var(--text); font-size:1rem; max-width:720px;}
+  .chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;}
+  .chips span{font-family:'JetBrains Mono',monospace; font-size:.75rem; color:var(--mint); background:rgba(76,201,240,.06); border:1px solid var(--mint-dim); padding:4px 10px; border-radius:999px;}
+
+  /* WORK DONE */
+  .buildlog{border-top:1px solid var(--line);}
+  .step{display:grid; grid-template-columns:40px 1fr; gap:18px; padding:24px 0; border-bottom:1px solid var(--line);}
+  .step:last-child{border-bottom:none;}
+  .step .num{
+    width:40px; height:40px; border-radius:50%; border:1px solid var(--mint-dim);
+    display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace;
+    color:var(--mint); font-size:.9rem; background:rgba(76,201,240,.05);
+  }
+  .step h3{font-size:1.08rem; color:#eef4f8; margin-bottom:4px;}
+  .step .where{font-family:'JetBrains Mono',monospace; font-size:.72rem; color:var(--gold); margin-bottom:10px;}
+  .step .label{font-family:'JetBrains Mono',monospace; font-size:.74rem; color:var(--mint); margin:12px 0 4px;}
+  .step ul{margin:0; padding-left:18px; color:var(--muted); font-size:.9rem;}
+  .step ul li{margin-bottom:5px;}
+  .step ul li b{color:var(--text); font-weight:600;}
+  .step pre{
+    background:#080b0d; border:1px solid var(--line); border-radius:8px; padding:14px 16px;
+    overflow-x:auto; font-size:.8rem; color:#bfeaff; margin:12px 0 12px; line-height:1.6;
+  }
+  .step .why-box{border-left:2px solid var(--gold); padding-left:12px; font-size:.88rem; color:var(--muted); margin-top:10px;}
+  .step .why-box b{color:var(--gold); font-family:'JetBrains Mono',monospace; font-weight:500; font-size:.76rem;}
+  .step .note{
+    margin-top:12px; border:1px dashed var(--line); border-radius:8px; padding:10px 12px;
+    font-size:.84rem; color:var(--muted); background:rgba(255,143,171,.04);
+  }
+
+  /* DESIGN NOTE */
+  .designnote{border-top:1px solid var(--line);}
+  .callout{
+    background:linear-gradient(135deg, rgba(76,201,240,.06), rgba(255,143,171,.04));
+    border:1px solid var(--mint-dim); border-radius:var(--radius); padding:22px 24px;
+  }
+  .callout h3{color:var(--mint); font-size:1rem; font-family:'JetBrains Mono',monospace; font-weight:600;}
+  .callout p{color:var(--text); font-size:.92rem; margin:0;}
+
+  /* ISSUES */
+  .incidents{border-top:1px solid var(--line);}
+  .incident{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px; margin-bottom:14px;}
+  .incident .top{display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
+  .incident .sev{
+    font-family:'JetBrains Mono',monospace; font-size:.72rem; padding:3px 9px; border-radius:5px;
+    color:var(--red); background:rgba(255,122,89,.1); border:1px solid var(--red-dim);
+  }
+  .incident .sev.info{color:var(--gold); background:rgba(255,143,171,.08); border-color:var(--gold-dim);}
+  .incident .id{font-family:'JetBrains Mono',monospace; font-size:.78rem; color:var(--muted);}
+  .incident h4{margin:0 0 8px; font-size:1rem; color:#eef4f8;}
+  .incident .err{
+    display:block; font-family:'JetBrains Mono',monospace; font-size:.78rem; color:#ffb8a3;
+    background:#1a0f0c; border:1px solid var(--red-dim); border-radius:6px; padding:8px 10px; margin-bottom:12px; overflow-x:auto;
+  }
+  .incident .row{font-size:.88rem; color:var(--muted); margin-bottom:6px;}
+  .incident .row b{font-family:'JetBrains Mono',monospace; font-size:.74rem; font-weight:500; margin-right:6px;}
+  .incident .row.cause b{color:var(--gold);}
+  .incident .row.fix b{color:var(--mint);}
+
+  /* CONTACT */
+  footer{border-top:1px solid var(--line); padding:48px 0 60px;}
+  footer .who{display:flex; align-items:center; gap:14px 28px; flex-wrap:wrap;}
+  footer .who .role{margin:0; padding-left:28px; border-left:1px solid var(--line);}
+  footer .who .mail{margin-left:auto; text-decoration:none; border:1px solid var(--mint-dim); border-radius:999px; padding:6px 14px; font-size:.85rem; font-family:'JetBrains Mono',monospace;}
+  footer .name{font-size:1.2rem; font-weight:700; color:#f4f8fb;}
+  footer .role{color:var(--mint); font-family:'JetBrains Mono',monospace; font-size:.85rem; margin:4px 0 16px;}
+  footer .links{display:flex; gap:18px; flex-wrap:wrap; font-size:.9rem;}
+  footer .links a{text-decoration:none; border-bottom:1px solid var(--mint-dim); padding-bottom:1px;}
+  footer .end{margin-top:26px; font-family:'JetBrains Mono',monospace; font-size:.7rem; color:var(--muted); letter-spacing:.05em;}
+
+  @media (max-width:560px){
+    .hero h1{font-size:1.9rem;}
+    section{padding:44px 0;}
+    .step{grid-template-columns:1fr; gap:10px;}
+    footer .who .role{padding-left:0; border-left:none;}
+    footer .who .mail{margin-left:0;}
+  }
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto;} }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <section class="hero">
+    <span class="tag">PKI INFRASTRUCTURE</span>
+    <h1>Certificate Authority <span class="accent">Practice Lab</span></h1>
+    <div class="sub-title">Two-tier PKI · Offline Root CA + Enterprise Subordinate CA</div>
+    <p class="lede">A hands-on lab where I designed and built a complete <b>two-tier Public Key Infrastructure</b> from scratch &mdash; an air-gapped Root CA, an Enterprise Subordinate CA integrated with Active Directory, HTTP certificate publication, auto-enrollment, and a fully tested issue &rarr; trust &rarr; revoke &rarr; verify lifecycle.</p>
+    <div class="stats">
+      <div class="stat"><strong>ROOT CA</strong><span>RSA 4096 · SHA256 · 15 yrs · offline</span></div>
+      <div class="stat"><strong>SUB CA</strong><span>Enterprise · domain-joined · RSA 2048</span></div>
+      <div class="stat"><strong>DOMAIN</strong><span>lab.local (AD DS + DNS)</span></div>
+      <div class="stat"><strong>LIFECYCLE</strong><span>issue · revoke · verify, tested</span></div>
+    </div>
+  </section>
+
+  <!-- OVERVIEW + ARCHITECTURE -->
+  <section class="overview">
+    <div class="eyebrow">LAB OVERVIEW</div>
+    <h2 class="sec">What this lab is about</h2>
+    <p>This lab recreates, on virtual machines, the way a real organisation runs its internal certificate authority. The Root CA is built first and then taken offline, because it is the single most valuable key in the whole hierarchy. It never signs anything day to day &mdash; its only job is to sign the Subordinate CA once. The Subordinate CA is the online issuing authority: it is joined to an Active Directory domain, publishes its certificate revocation list (CRL) over HTTP through IIS, and issues certificates to domain users automatically through Group Policy auto-enrollment.</p>
+    <p>I then tested the full lifecycle &mdash; issuing a certificate, revoking it, publishing a fresh CRL, and confirming from a client machine that the revocation is detected. Every error I hit along the way is recorded in the Issues &amp; Resolutions section.</p>
+
+    <div class="contains">
+      <div><h4>ROOT-CA</h4><p>Standalone, offline, air-gapped Root CA. Not domain-joined and not on any network.</p></div>
+      <div><h4>DC01</h4><p>Domain Controller for <code>lab.local</code> with AD DS, DNS and Group Policy.</p></div>
+      <div><h4>SUB-CA</h4><p>Enterprise Subordinate CA, domain-joined, with IIS publishing CDP/AIA over HTTP.</p></div>
+      <div><h4>CLIENT01</h4><p>Domain-joined client that auto-enrolls for certificates and verifies revocation.</p></div>
+    </div>
+
+    <div class="arch">
+      <h3>Lab Architecture</h3>
+      <div class="hint">PKI HIERARCHY · TRUST PATH · CERTIFICATE LIFECYCLE &nbsp;(swipe sideways on mobile)</div>
+      <div class="arch-scroll">
+      <svg viewBox="0 0 800 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Architecture of the two-tier PKI lab: offline Root CA, domain controller, subordinate CA and client">
+        <defs>
+          <marker id="arrM" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#4cc9f0"/></marker>
+          <marker id="arrG" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ff8fab"/></marker>
+          <marker id="arrD" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#55697a"/></marker>
+        </defs>
+
+        <!-- Offline zone -->
+        <rect x="14" y="20" width="206" height="430" rx="12" fill="#10161a" stroke="#6b2f40" stroke-width="1.5" stroke-dasharray="6 5"/>
+        <text x="117" y="44" text-anchor="middle" fill="#ff8fab" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">OFFLINE · AIR-GAPPED</text>
+
+        <rect x="34" y="170" width="166" height="130" rx="10" fill="#141a1f" stroke="#ff8fab" stroke-width="1.6"/>
+        <text x="117" y="196" text-anchor="middle" fill="#ff8fab" font-family="JetBrains Mono, monospace" font-size="14" font-weight="700">ROOT-CA</text>
+        <text x="117" y="218" text-anchor="middle" fill="#e6edf2" font-family="JetBrains Mono, monospace" font-size="11">Standalone Root CA</text>
+        <text x="117" y="236" text-anchor="middle" fill="#8a99a6" font-family="JetBrains Mono, monospace" font-size="10.5">RSA 4096 · SHA256</text>
+        <text x="117" y="252" text-anchor="middle" fill="#8a99a6" font-family="JetBrains Mono, monospace" font-size="10.5">15-year validity</text>
+        <text x="117" y="268" text-anchor="middle" fill="#8a99a6" font-family="JetBrains Mono, monospace" font-size="10.5">CRL period: years</text>
+        <text x="117" y="284" text-anchor="middle" fill="#8a99a6" font-family="JetBrains Mono, monospace" font-size="10.5">not domain-joined</text>
+
+        <text x="117" y="400" text-anchor="middle" fill="#8a99a6" font-family="JetBrains Mono, monospace" font-size="10">Powered on only for</text>
+        <text x="117" y="415" text-anchor="middle" fill="#8a99a6" font-family="JetBrains Mono, monospace" font-size="10">signing ceremonies</text>
+
+        <!-- Domain zone -->
+        <rect x="320" y="20" width="466" height="430" rx="12" fill="#10161a" stroke="#1b5b73" stroke-width="1.5"/>
+        <text x="553" y="44" text-anchor="middle" fill="#4cc9f0" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">lab.local · ACTIVE DIRECTORY DOMAIN</text>
+
+        <!-- DC01 -->
+        <rect x="344" y="62" width="418" height="86" rx="10" fill="#141a1f" stroke="#2f3b45" stroke-width="1.5"/>
+        <text x="553" y="88" text-anchor="middle" fill="#e6edf2" font-family="JetBrains Mono, monospace" font-size="14" font-weight="700">DC01</text>
+        <text x="553" y="108" text-anchor="middle" fill="#e6edf2" font-family="JetBrains Mono, monospace" font-size="11">Domain Controller</text>
+        <text x="553" y="128" text-anchor="middle" fill="#8a99a6" font-family="JetBrains Mono, monospace" font-size="10.5">AD DS · DNS · Group Policy (auto-enrollment) · stores published CA certs</text>
+
+        <!-- SUB-CA -->
+        <rect x="344" y="196" width="196" height="150" rx="10" fill="#141a1f" stroke="#4cc9f0" stroke-width="1.6"/>
+        <text x="442" y="222" text-anchor="middle" fill="#4cc9f0" font-family="JetBrains Mono, monospace" font-size="14" font-weight="700">SUB-CA</text>
+        <text x="442" y="243" text-anchor="middle" fill="#e6edf2" font-family="JetBrains Mono, monospace" font-size="11">Enterprise Subordinate CA</text>
+        <text x="442" y="262" text-anchor="middle" fill="#8a99a6" font-family="JetBrains Mono, monospace" font-size="10.5">RSA 2048 · SHA256</text>
+        <text x="442" y="279" text-anchor="middle" fill="#8a99a6" font-family="JetBrains Mono, monospace" font-size="10.5">Template: LabUserCert</text>
+        <text x="442" y="296" text-anchor="middle" fill="#8a99a6" font-family="JetBrains Mono, monospace" font-size="10.5">IIS web server</text>
+        <text x="442" y="313" text-anchor="middle" fill="#8a99a6" font-family="JetBrains Mono, monospace" font-size="10.5">CDP / AIA over HTTP</text>
+        <text x="442" y="331" text-anchor="middle" fill="#8a99a6" font-family="JetBrains Mono, monospace" font-size="10.5">issuing CA · online</text>
+
+        <!-- CLIENT01 -->
+        <rect x="566" y="196" width="196" height="150" rx="10" fill="#141a1f" stroke="#2f3b45" stroke-width="1.5"/>
+        <text x="664" y="222" text-anchor="middle" fill="#e6edf2" font-family="JetBrains Mono, monospace" font-size="14" font-weight="700">CLIENT01</text>
+        <text x="664" y="243" text-anchor="middle" fill="#e6edf2" font-family="JetBrains Mono, monospace" font-size="11">Domain-joined client</text>
+        <text x="664" y="266" text-anchor="middle" fill="#8a99a6" font-family="JetBrains Mono, monospace" font-size="10.5">receives GPO policy</text>
+        <text x="664" y="283" text-anchor="middle" fill="#8a99a6" font-family="JetBrains Mono, monospace" font-size="10.5">auto-enrolls user cert</text>
+        <text x="664" y="300" text-anchor="middle" fill="#8a99a6" font-family="JetBrains Mono, monospace" font-size="10.5">checks revocation (HTTP)</text>
+        <text x="664" y="317" text-anchor="middle" fill="#8a99a6" font-family="JetBrains Mono, monospace" font-size="10.5">result: CRYPT_E_REVOKED</text>
+
+        <!-- Trust chain -->
+        <rect x="344" y="378" width="418" height="56" rx="10" fill="#0c1013" stroke="#232c33" stroke-width="1.2"/>
+        <text x="553" y="397" text-anchor="middle" fill="#8a99a6" font-family="JetBrains Mono, monospace" font-size="10">TRUST CHAIN</text>
+        <text x="553" y="419" text-anchor="middle" fill="#e6edf2" font-family="JetBrains Mono, monospace" font-size="11.5">ROOT-CA (self-signed)  →  SUB-CA  →  LabUserCert</text>
+
+        <!-- Arrow 1: Root -> Sub (manual, gold) -->
+        <line x1="200" y1="248" x2="340" y2="248" stroke="#ff8fab" stroke-width="2.2" stroke-dasharray="6 5" marker-end="url(#arrG)"/>
+        <text x="270" y="236" text-anchor="middle" fill="#ff8fab" font-family="JetBrains Mono, monospace" font-size="10">PKI-Transfer</text>
+        <text x="270" y="272" text-anchor="middle" fill="#8a99a6" font-family="JetBrains Mono, monospace" font-size="9.5">VMware shared</text>
+        <text x="270" y="284" text-anchor="middle" fill="#8a99a6" font-family="JetBrains Mono, monospace" font-size="9.5">folder · manual</text>
+        <circle cx="270" cy="212" r="11" fill="#0c1013" stroke="#ff8fab"/>
+        <text x="270" y="216" text-anchor="middle" fill="#ff8fab" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">1</text>
+
+        <!-- Arrow 2: DC01 -> SUB-CA and CLIENT01 -->
+        <line x1="442" y1="148" x2="442" y2="192" stroke="#55697a" stroke-width="1.8" marker-end="url(#arrD)"/>
+        <line x1="664" y1="148" x2="664" y2="192" stroke="#55697a" stroke-width="1.8" marker-end="url(#arrD)"/>
+        <circle cx="442" cy="170" r="11" fill="#0c1013" stroke="#55697a"/>
+        <text x="442" y="174" text-anchor="middle" fill="#b4c4d0" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">2</text>
+        <circle cx="664" cy="170" r="11" fill="#0c1013" stroke="#55697a"/>
+        <text x="664" y="174" text-anchor="middle" fill="#b4c4d0" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">2</text>
+
+        <!-- Arrow 3: CLIENT01 -> SUB-CA enroll -->
+        <line x1="566" y1="240" x2="544" y2="240" stroke="#4cc9f0" stroke-width="2.2" marker-end="url(#arrM)"/>
+        <circle cx="553" cy="222" r="11" fill="#0c1013" stroke="#4cc9f0"/>
+        <text x="553" y="226" text-anchor="middle" fill="#4cc9f0" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">3</text>
+
+        <!-- Arrow 4: CLIENT01 -> SUB-CA revocation check -->
+        <line x1="566" y1="316" x2="544" y2="316" stroke="#4cc9f0" stroke-width="2.2" stroke-dasharray="4 3" marker-end="url(#arrM)"/>
+        <circle cx="553" cy="296" r="11" fill="#0c1013" stroke="#4cc9f0"/>
+        <text x="553" y="300" text-anchor="middle" fill="#4cc9f0" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">4</text>
+      </svg>
+      </div>
+
+      <ul class="legend">
+        <li><span class="b">1</span><span><b>Signing ceremony</b> &mdash; the Sub CA request is carried to the offline Root over the VMware shared folder, signed, and carried back. This is the only link between the two.</span></li>
+        <li><span class="b">2</span><span><b>Domain services</b> &mdash; DC01 provides DNS, authentication, and Group Policy to SUB-CA and CLIENT01, and holds the CA certificates published to AD.</span></li>
+        <li><span class="b">3</span><span><b>Enrollment</b> &mdash; CLIENT01 receives the auto-enrollment policy and obtains a certificate from the SUB-CA using the LabUserCert template.</span></li>
+        <li><span class="b">4</span><span><b>Revocation check</b> &mdash; clients fetch the CRL over HTTP from the SUB-CA's IIS site to confirm whether a certificate is still valid.</span></li>
+      </ul>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>MACHINE</th><th>ROLE</th><th>KEY CONFIGURATION</th></tr></thead>
+        <tbody>
+          <tr><td>ROOT-CA</td><td>Standalone Root CA (offline)</td><td>4096-bit key, SHA256, 15-year validity, CRL period set in years, no network connection</td></tr>
+          <tr><td>DC01</td><td>Domain Controller + DNS</td><td>New forest <code>lab.local</code>, static IP, Group Policy with certificate auto-enrollment enabled</td></tr>
+          <tr><td>SUB-CA</td><td>Enterprise Subordinate (issuing) CA</td><td>2048-bit key, SHA256, signed by ROOT-CA, IIS for HTTP CDP/AIA, <code>LabUserCert</code> template published</td></tr>
+          <tr><td>CLIENT01</td><td>Domain client / test machine</td><td>Auto-enrolled user certificate, chain and revocation verified with <code>certutil -verify -urlfetch</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- WHY -->
+  <section class="why">
+    <div class="eyebrow">WHY</div>
+    <h2 class="sec">Why I built this lab</h2>
+    <p>Reading about PKI explains the vocabulary, but building one forces every design decision to be made and every failure to be diagnosed. I wanted to build a certificate hierarchy from nothing &mdash; choose the key sizes, decide what stays offline, plan where revocation information is published, integrate the CA with Active Directory, and then prove it works by revoking a certificate and watching a client detect it.</p>
+    <p>Nothing in this lab was copied from a template, and nothing was hidden when it broke &mdash; the errors and fixes are documented below.</p>
+    <div class="chips">
+      <span>CA hierarchy design</span>
+      <span>Offline root discipline</span>
+      <span>CDP / AIA configuration</span>
+      <span>Enterprise CA + Active Directory</span>
+      <span>Certificate templates</span>
+      <span>Auto-enrollment (GPO)</span>
+      <span>CRL publishing &amp; revocation</span>
+      <span>Troubleshooting</span>
+    </div>
+  </section>
+
+  <!-- WORK DONE -->
+  <section class="buildlog">
+    <div class="eyebrow">WORK DONE</div>
+    <h2 class="sec">What I built, stage by stage</h2>
+
+    <div class="step">
+      <div class="num">1</div>
+      <div>
+        <h3>Built the offline Root CA</h3>
+        <div class="where">MACHINE · ROOT-CA</div>
+        <div class="label">WHAT I DID</div>
+        <ul>
+          <li>Set up a standalone Windows Server VM (<b>ROOT-CA</b>) that is <b>not joined to any domain</b> and has no network connection to the lab.</li>
+          <li>Installed Active Directory Certificate Services and configured it as a <b>Standalone Root CA</b> with a <b>4096-bit key</b>, <b>SHA256</b> hashing and <b>15-year validity</b>.</li>
+          <li>Changed the CRL period to years so the CRL stays valid while the Root is powered off, then published the first CRL.</li>
+        </ul>
+        <pre>Install-AdcsCertificationAuthority -CAType StandaloneRootCA `
+  -KeyLength 4096 -HashAlgorithmName SHA256 `
+  -ValidityPeriod Years -ValidityPeriodUnits 15
+certutil -setreg CA\CRLPeriod "Years"
+certutil -crl</pre>
+        <div class="why-box"><b>WHY</b><br>4096 bits for a 15-year trust anchor. A long CRL period suits a CA that is powered off for most of its life.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">2</div>
+      <div>
+        <h3>Built the domain controller</h3>
+        <div class="where">MACHINE · DC01</div>
+        <div class="label">WHAT I DID</div>
+        <ul>
+          <li>Set the local Administrator password, then promoted the server to a Domain Controller by creating a new forest, <b>lab.local</b>.</li>
+          <li>Gave DC01 a static IP and used it as the DNS server for the lab, so every other machine can find the domain.</li>
+        </ul>
+        <pre>Install-ADDSForest -DomainName "lab.local"</pre>
+        <div class="why-box"><b>WHY</b><br>An Enterprise CA needs Active Directory &mdash; templates, auto-enrollment and certificate publication all depend on it.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">3</div>
+      <div>
+        <h3>Prepared the Subordinate CA and generated its request</h3>
+        <div class="where">MACHINE · SUB-CA</div>
+        <div class="label">WHAT I DID</div>
+        <ul>
+          <li>Pointed the SUB-CA's DNS at DC01 and <b>joined it to lab.local</b>.</li>
+          <li>Installed AD CS and started the <b>Enterprise Subordinate CA</b> setup with a <b>2048-bit key</b> and SHA256.</li>
+          <li>The setup produced a certificate request (<code>.req</code> file) instead of a working CA &mdash; the Sub CA cannot issue anything until the Root signs it.</li>
+        </ul>
+        <pre>Install-AdcsCertificationAuthority -CAType EnterpriseSubordinateCA `
+  -KeyLength 2048 -HashAlgorithmName SHA256</pre>
+        <div class="why-box"><b>WHY</b><br>This is what makes the hierarchy two-tier: the issuing CA gets its authority from the Root, not from itself.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">4</div>
+      <div>
+        <h3>Performed the signing ceremony across the air gap</h3>
+        <div class="where">MACHINES · SUB-CA → ROOT-CA → SUB-CA</div>
+        <div class="label">WHAT I DID</div>
+        <ul>
+          <li>Copied the <code>.req</code> file from SUB-CA to a <b>VMware shared folder</b> (<code>PKI-Transfer</code>), the only transfer path between the machines.</li>
+          <li>Powered on ROOT-CA, submitted the request, issued it from the Root CA console, and exported the signed <code>SubCA.crt</code>.</li>
+          <li>Copied the signed certificate and the Root certificate back through the shared folder, then powered the Root CA off again.</li>
+        </ul>
+        <pre>certreq -submit SUB-CA.lab.local_LabSubCA.req
+certreq -retrieve &lt;RequestID&gt; SubCA.crt</pre>
+        <div class="why-box"><b>WHY</b><br>No network path to ROOT-CA exists by design. Moving files by hand, every time, is the offline-root discipline real CAs follow.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">5</div>
+      <div>
+        <h3>Installed the signed certificate and established trust in the Root</h3>
+        <div class="where">MACHINE · SUB-CA</div>
+        <div class="label">WHAT I DID</div>
+        <ul>
+          <li>Installed the signed certificate on SUB-CA to complete its setup.</li>
+          <li>Published the Root CA certificate into Active Directory so every domain machine trusts it automatically.</li>
+          <li>Set a CA registry flag so the service can start while its issuer (the Root) is offline, then started Certificate Services.</li>
+        </ul>
+        <pre>certutil -installcert SubCA.crt
+certutil -setreg ca\CRLFlags +CRLF_REVCHECK_IGNORE_OFFLINE
+certutil -dspublish -f RootCA.crt RootCA</pre>
+        <div class="why-box"><b>WHY</b><br>Certificate Services checks its issuer's revocation status at startup. With a deliberately offline Root, that check has to be told to stand down.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">6</div>
+      <div>
+        <h3>Set up CRL and AIA publication over HTTP using IIS</h3>
+        <div class="where">MACHINE · SUB-CA</div>
+        <div class="label">WHAT I DID</div>
+        <ul>
+          <li>Installed the IIS web server role on SUB-CA to host the CRL and CA certificate files.</li>
+          <li>Configured the CA to publish revocation information (CDP) and issuer information (AIA) at an HTTP location, and published a fresh CRL.</li>
+          <li>Verified that the files are reachable by URL, so any client can check revocation &mdash; not only AD-aware ones.</li>
+        </ul>
+        <pre>Install-WindowsFeature Web-Server
+certutil -crl</pre>
+        <div class="why-box"><b>WHY</b><br>HTTP publication lets any client, domain-joined or not, check whether a certificate has been revoked.</div>
+        <div class="note">The Root CA's own certificate carries <b style="color:var(--gold)">no CDP/AIA at all</b> &mdash; this is correct, not missing. A trust anchor is trusted directly from the machine store.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">7</div>
+      <div>
+        <h3>Created a certificate template and enabled auto-enrollment</h3>
+        <div class="where">MACHINES · SUB-CA, DC01, CLIENT01</div>
+        <div class="label">WHAT I DID</div>
+        <ul>
+          <li>Duplicated the built-in <b>User</b> template as <b>LabUserCert</b> and published it on the SUB-CA.</li>
+          <li>Created a Group Policy that turns on <b>certificate auto-enrollment</b> under Public Key Policies.</li>
+          <li>Joined CLIENT01 to the domain, applied the policy, and confirmed that the domain user received a certificate automatically with no manual request.</li>
+          <li>Added an email address to the user's AD account because the template required one, then confirmed it appears in the certificate's Subject Alternative Name.</li>
+        </ul>
+        <pre>certtmpl.msc  → duplicate "User" → LabUserCert
+GPO: Public Key Policies → Auto-Enrollment → Enabled</pre>
+        <div class="why-box"><b>WHY</b><br>In Enterprise PKI a domain user should never have to request a certificate by hand.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">8</div>
+      <div>
+        <h3>Tested the full certificate lifecycle</h3>
+        <div class="where">MACHINES · SUB-CA, CLIENT01</div>
+        <div class="label">WHAT I DID</div>
+        <ul>
+          <li>Verified the complete chain <b>Root → Sub CA → issued certificate</b> from the client.</li>
+          <li>Revoked the issued certificate on the SUB-CA and published a new CRL.</li>
+          <li>Ran a verification from CLIENT01 that downloads the CRL over HTTP, and confirmed the client correctly reported the certificate as revoked.</li>
+        </ul>
+        <pre>certutil -verify -urlfetch Samplecert.cer
+→ The certificate is revoked. 0x80092010 (CRYPT_E_REVOKED)</pre>
+        <div class="why-box"><b>WHY</b><br>Issuing a certificate proves little by itself. Revoking it and watching a client detect that over HTTP proves the whole chain works end to end.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DESIGN NOTE -->
+  <section class="designnote">
+    <div class="callout">
+      <h3>DESIGN NOTE // ROOT CA HAS NO CDP</h3>
+      <p>A root's self-signed certificate is trusted directly from the local trust store &mdash; nothing above it needs to check its revocation status. Real-world roots commonly ship without a CDP/AIA on their own certificate for this reason. Adding one here would contradict the minimal, offline-by-design footprint this lab exists to demonstrate.</p>
+    </div>
+  </section>
+
+  <!-- ISSUES -->
+  <section class="incidents">
+    <div class="eyebrow">ISSUES &amp; RESOLUTIONS</div>
+    <h2 class="sec">Problems I hit and how I fixed them</h2>
+
+    <div class="incident">
+      <div class="top"><span class="sev">BLOCKED</span><span class="id">#01 · AD DS promotion</span></div>
+      <h4>Blank local Administrator password</h4>
+      <span class="err">Prerequisites failed: local Administrator password does not meet requirements</span>
+      <div class="row cause"><b>CAUSE</b>The server's local Administrator account had a blank password, which AD DS promotion does not accept.</div>
+      <div class="row fix"><b>FIX</b>Set the password from the command line with <code>net user Administrator &lt;password&gt;</code>. This was more reliable than the GUI dialog, which can silently miss the VM if Ctrl+Alt+Delete is captured by the host.</div>
+    </div>
+
+    <div class="incident">
+      <div class="top"><span class="sev">BLOCKED</span><span class="id">#02 · Domain join</span></div>
+      <h4>DNS pointed at the wrong server</h4>
+      <span class="err">0x0000232B RCODE_NAME_ERROR — AD DC could not be contacted</span>
+      <div class="row cause"><b>CAUSE</b>SUB-CA was using VMware's NAT DNS instead of DC01, so it could not resolve <code>lab.local</code>. Confirmed with <code>nslookup lab.local</code>.</div>
+      <div class="row fix"><b>FIX</b>Pointed the SUB-CA's DNS setting at DC01's static IP. The domain join then succeeded.</div>
+    </div>
+
+    <div class="incident">
+      <div class="top"><span class="sev info">INFO</span><span class="id">#03 · File transfer</span></div>
+      <h4>CMD rejects UNC paths as a working directory</h4>
+      <span class="err">CMD does not support UNC paths as current directories</span>
+      <div class="row cause"><b>CAUSE</b>Not a configuration fault &mdash; Command Prompt cannot use a network path as its current directory.</div>
+      <div class="row fix"><b>FIX</b>Mapped the share to a drive letter with <code>net use Z: \\vmware-host\Shared Folders\PKI-Transfer</code> and worked from <code>Z:</code> instead of using <code>cd</code> on the UNC path.</div>
+    </div>
+
+    <div class="incident">
+      <div class="top"><span class="sev info">FALSE ALARM</span><span class="id">#04 · Certificate install</span></div>
+      <h4>Looked broken, was already done</h4>
+      <span class="err">0x8007139f ERROR_INVALID_STATE</span>
+      <div class="row cause"><b>CAUSE</b>The error appeared because the signed certificate had already been installed on an earlier attempt.</div>
+      <div class="row fix"><b>FIX</b><code>certutil -verify</code> showed the chain was already valid, so nothing needed repair. The real blocker was the service startup error (#05).</div>
+    </div>
+
+    <div class="incident">
+      <div class="top"><span class="sev">BLOCKED</span><span class="id">#05 · Certificate Services startup</span></div>
+      <h4>Service refused to start against an offline issuer</h4>
+      <span class="err">Service error 2148081683 — CRYPT_E_REVOCATION_OFFLINE</span>
+      <div class="row cause"><b>CAUSE</b>On startup the CA checks the revocation status of its issuer. The Root CA is offline by design, so the check could not complete.</div>
+      <div class="row fix"><b>FIX</b>Ran <code>certutil -setreg ca\CRLFlags +CRLF_REVCHECK_IGNORE_OFFLINE</code> &mdash; Microsoft's documented setting for exactly this offline-root layout &mdash; and restarted the service.</div>
+    </div>
+
+
+
+    <div class="incident">
+      <div class="top"><span class="sev info">INFO</span><span class="id">#06 · Revocation check</span></div>
+      <h4>HTTP CDP silently falling back to LDAP</h4>
+      <span class="err">ERROR_WINHTTP_NAME_NOT_RESOLVED on the HTTP CDP path</span>
+      <div class="row cause"><b>CAUSE</b>Same root cause as #02 &mdash; the client's DNS was not resolving the SUB-CA's hostname, so the HTTP URL failed and Windows fell back to LDAP.</div>
+      <div class="row fix"><b>FIX</b>Added a temporary HOSTS entry on the test machine to prove the HTTP path works. The proper fix is DNS pointed at DC01 on every machine.</div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <footer>
+    <div class="who">
+      <div class="name">D. Suresh Xavier</div>
+      <div class="role">Security Operations Engineer</div>
+      <a class="mail" href="mailto:xavierreivax15@gmail.com">&#9993; xavierreivax15@gmail.com</a>
+    </div>
+    <div class="end">CERTIFICATE AUTHORITY PRACTICE LAB · PKI INFRASTRUCTURE</div>
+  </footer>
+
+</div>
+</body>
+</html>
